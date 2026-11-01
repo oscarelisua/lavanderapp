@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>Lavandería · Control de Ingresos y Gastos</title>
+<meta name="theme-color" content="#1D4B46">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --linen:#F6F2EA;
+    --card:#FFFFFF;
+    --border:#E4DDCF;
+    --ink:#21302E;
+    --ink-soft:#5B6B67;
+    --teal:#2F6B64;
+    --teal-deep:#1D4B46;
+    --amber:#E2A33D;
+    --brick:#B8503A;
+    --sage:#7FA599;
+    --shadow: 0 1px 2px rgba(33,48,46,0.06), 0 4px 12px rgba(33,48,46,0.06);
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:var(--linen);
+    color:var(--ink);
+    font-family:'Inter',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  h1,h2,h3,.num-display{font-family:'Fraunces',serif;}
+  button{font-family:inherit;}
+  #app{max-width:520px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;background:var(--linen);}
+
+  /* ---------- HEADER ---------- */
+  header.top{
+    background:linear-gradient(180deg, var(--teal-deep), var(--teal));
+    color:#fff;
+    padding:18px 18px 22px;
+    position:sticky;
+    top:0;
+    z-index:20;
+  }
+  header.top .brand{
+    display:flex;align-items:center;justify-content:space-between;
+    font-size:14px;opacity:0.85;margin-bottom:10px;letter-spacing:0.2px;
+  }
+  header.top .brand .sync-dot{
+    display:inline-flex;align-items:center;gap:6px;font-size:12px;
+    padding:4px 9px;border-radius:20px;background:rgba(255,255,255,0.14);
+    cursor:pointer; border:none; color:#fff;
+  }
+  header.top .brand .sync-dot .dot{width:7px;height:7px;border-radius:50%;background:var(--amber);}
+  header.top .brand .sync-dot.ok .dot{background:#8FD4A8;}
+  header.top .brand .sync-dot.off .dot{background:rgba(255,255,255,0.4);}
+  .balance-row{display:flex;align-items:baseline;justify-content:space-between;}
+  .balance-label{font-size:13px;opacity:0.8;text-transform:none;}
+  .balance-num{font-size:34px;font-weight:600;line-height:1;margin-top:4px;}
+  .balance-sub{display:flex;gap:16px;margin-top:14px;font-size:12.5px;}
+  .balance-sub div{opacity:0.9;}
+  .balance-sub b{display:block;font-size:15px;font-weight:600;}
+
+  /* ---------- TABS CONTENT ---------- */
+  main{flex:1;padding:16px 16px 100px;}
+  .card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:16px;
+    margin-bottom:14px;
+    box-shadow:var(--shadow);
+  }
+  .card h2{font-size:17px;margin:0 0 12px;font-weight:600;color:var(--teal-deep);}
+  .card h2 small{display:block;font-family:'Inter';font-size:12px;font-weight:400;color:var(--ink-soft);margin-top:2px;}
+  label{display:block;font-size:12.5px;color:var(--ink-soft);margin:10px 0 5px;font-weight:500;}
+  label:first-child{margin-top:0;}
+  input,select,textarea{
+    width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:9px;
+    font-size:15px;background:#FBFAF7;color:var(--ink);
+  }
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--teal);background:#fff;}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .row3{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:10px;}
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:6px;
+    border:none;border-radius:10px;padding:11px 16px;font-size:14.5px;font-weight:600;
+    cursor:pointer;width:100%;margin-top:14px;
+  }
+  .btn-primary{background:var(--teal);color:#fff;}
+  .btn-primary:active{background:var(--teal-deep);}
+  .btn-amber{background:var(--amber);color:#2A1E05;}
+  .btn-ghost{background:transparent;color:var(--teal);border:1.5px solid var(--teal);}
+  .btn-danger-ghost{background:transparent;color:var(--brick);border:1.5px solid rgba(184,80,58,0.4);}
+  .btn-sm{width:auto;padding:7px 12px;font-size:13px;margin-top:0;}
+
+  .list-item{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:11px 0;border-bottom:1px solid var(--border);gap:10px;
+  }
+  .list-item:last-child{border-bottom:none;}
+  .li-main{flex:1;min-width:0;}
+  .li-title{font-size:14.5px;font-weight:600;color:var(--ink);}
+  .li-sub{font-size:12.5px;color:var(--ink-soft);margin-top:2px;}
+  .li-amount{font-size:15px;font-weight:600;white-space:nowrap;}
+  .li-amount.pos{color:var(--teal);}
+  .li-amount.neg{color:var(--brick);}
+  .li-del{background:none;border:none;color:var(--ink-soft);font-size:17px;cursor:pointer;padding:4px 6px;}
+
+  .pill{display:inline-block;font-size:11px;padding:3px 9px;border-radius:20px;background:#EEF3F1;color:var(--teal-deep);font-weight:600;}
+  .pill.brick{background:#F6E9E5;color:var(--brick);}
+  .pill.amber{background:#FBF0DC;color:#8A5F17;}
+
+  .empty{text-align:center;padding:26px 10px;color:var(--ink-soft);font-size:13.5px;}
+
+  .month-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}
+  .month-nav button{background:none;border:none;font-size:18px;color:var(--teal);cursor:pointer;padding:4px 10px;}
+  .month-nav span{font-size:14px;font-weight:600;text-transform:capitalize;}
+
+  /* ---------- BOTTOM NAV ---------- */
+  nav.bottom{
+    position:fixed;bottom:0;left:0;right:0;
+    background:#fff;border-top:1px solid var(--border);
+    display:flex;justify-content:space-around;
+    padding:8px 6px calc(8px + env(safe-area-inset-bottom,0px));
+    max-width:520px;margin:0 auto;z-index:30;
+  }
+  nav.bottom button{
+    background:none;border:none;display:flex;flex-direction:column;align-items:center;gap:3px;
+    color:var(--ink-soft);font-size:10.5px;font-weight:600;cursor:pointer;padding:4px 8px;flex:1;
+  }
+  nav.bottom button svg{width:21px;height:21px;stroke:var(--ink-soft);fill:none;stroke-width:1.8;}
+  nav.bottom button.active{color:var(--teal-deep);}
+  nav.bottom button.active svg{stroke:var(--teal-deep);}
+
+  .tab{display:none;}
+  .tab.active{display:block;}
+
+  .toast{
+    position:fixed;left:50%;bottom:88px;transform:translateX(-50%);
+    background:var(--teal-deep);color:#fff;padding:10px 18px;border-radius:24px;
+    font-size:13.5px;box-shadow:var(--shadow);z-index:50;opacity:0;pointer-events:none;
+    transition:opacity 0.25s, transform 0.25s;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(-6px);}
+
+  .segmented{display:flex;background:#EFEAE0;border-radius:10px;padding:3px;margin-bottom:4px;}
+  .segmented button{flex:1;border:none;background:none;padding:8px;border-radius:8px;font-size:13px;font-weight:600;color:var(--ink-soft);cursor:pointer;}
+  .segmented button.active{background:#fff;color:var(--teal-deep);box-shadow:0 1px 2px rgba(0,0,0,0.08);}
+
+  .info-box{background:#FBF0DC;border:1px solid #EFD9A8;border-radius:10px;padding:12px;font-size:13px;color:#6B4E13;line-height:1.5;margin-bottom:14px;}
+  .settings-group{margin-bottom:8px;}
+  .settings-group summary{cursor:pointer;font-size:14.5px;font-weight:600;color:var(--teal-deep);padding:6px 0;list-style:none;display:flex;justify-content:space-between;align-items:center;}
+  .settings-group summary::-webkit-details-marker{display:none;}
+  .settings-group summary::after{content:'▾';color:var(--ink-soft);font-size:12px;}
+  .settings-group[open] summary::after{content:'▴';}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <header class="top">
+    <div class="brand">
+      <span id="fechaHoy"></span>
+      <button class="sync-dot off" id="syncBtn"><span class="dot"></span><span id="syncLabel">Drive</span></button>
+    </div>
+    <div class="balance-row">
+      <div>
+        <div class="balance-label">Balance de <span id="mesActualLabel"></span></div>
+        <div class="balance-num" id="balanceMes">$0</div>
+      </div>
+    </div>
+    <div class="balance-sub">
+      <div>Ingresos<b id="sumIngresos">$0</b></div>
+      <div>Gastos<b id="sumGastos">$0</b></div>
+      <div>Fijos<b id="sumFijos">$0</b></div>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- ================= TAB: PANEL / DASHBOARD ================= -->
+    <section class="tab active" id="tab-panel">
+
+      <div class="card">
+        <h2>Nuevo ingreso<small>Registrá un servicio cobrado</small></h2>
+        <label>Cliente</label>
+        <input list="dlClientes" id="ingClienteInput" placeholder="Elegí o escribí un cliente nuevo">
+        <datalist id="dlClientes"></datalist>
+
+        <label>Servicio</label>
+        <select id="ingServicio"></select>
+
+        <div class="row3">
+          <div>
+            <label>Cantidad</label>
+            <input type="number" id="ingCantidad" value="1" min="1">
+          </div>
+          <div>
+            <label>Precio unit.</label>
+            <input type="number" id="ingPrecio" placeholder="0">
+          </div>
+          <div>
+            <label>Total</label>
+            <input type="number" id="ingTotal" placeholder="0">
+          </div>
+        </div>
+
+        <label>Forma de pago</label>
+        <div class="segmented" id="segPago">
+          <button data-val="Efectivo" class="active">Efectivo</button>
+          <button data-val="Transferencia">Transferencia</button>
+        </div>
+
+        <label>Fecha</label>
+        <input type="date" id="ingFecha">
+
+        <button class="btn btn-primary" id="btnGuardarIngreso">Guardar ingreso</button>
+      </div>
+
+      <div class="card">
+        <h2>Movimientos de hoy</h2>
+        <div id="listaHoy"><div class="empty">Todavía no cargaste nada hoy</div></div>
+      </div>
+
+    </section>
+
+    <!-- ================= TAB: GASTOS ================= -->
+    <section class="tab" id="tab-gastos">
+
+      <div class="card">
+        <h2>Nuevo gasto<small>Insumos, transporte, imprevistos del local</small></h2>
+        <label>Categoría</label>
+        <select id="gastoCategoria">
+          <option>Detergente</option>
+          <option>Suavizante</option>
+          <option>Bolsas / Embalaje</option>
+          <option>Transporte</option>
+          <option>Mantenimiento máquinas</option>
+          <option>Otro</option>
+        </select>
+        <label>Descripción (opcional)</label>
+        <input type="text" id="gastoDescripcion" placeholder="Ej: 5L de detergente industrial">
+        <div class="row2">
+          <div>
+            <label>Monto</label>
+            <input type="number" id="gastoMonto" placeholder="0">
+          </div>
+          <div>
+            <label>Fecha</label>
+            <input type="date" id="gastoFecha">
+          </div>
+        </div>
+        <button class="btn btn-primary" id="btnGuardarGasto">Guardar gasto</button>
+      </div>
+
+      <div class="card">
+        <h2>Gastos variables del mes</h2>
+        <div id="listaGastosMes"><div class="empty">Sin gastos este mes</div></div>
+      </div>
+
+    </section>
+
+    <!-- ================= TAB: FIJOS ================= -->
+    <section class="tab" id="tab-fijos">
+
+      <div class="card" id="cardAplicarMes">
+        <h2>Costos fijos<small>Alquiler, servicios, sueldos — se confirman una vez por mes</small></h2>
+        <div id="estadoMesFijos"></div>
+      </div>
+
+      <div class="card">
+        <h2>Conceptos configurados<small>Editá los montos y tocá "Aplicar mes" arriba</small></h2>
+        <div id="listaCostosFijos"></div>
+        <button class="btn btn-ghost" id="btnNuevoFijo">+ Agregar concepto fijo</button>
+      </div>
+
+    </section>
+
+    <!-- ================= TAB: HISTORIAL ================= -->
+    <section class="tab" id="tab-historial">
+      <div class="card">
+        <div class="month-nav">
+          <button id="mesAnterior">‹</button>
+          <span id="mesHistorialLabel"></span>
+          <button id="mesSiguiente">›</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Resumen del mes</h2>
+        <div class="list-item"><div class="li-main"><div class="li-title">Ingresos</div></div><div class="li-amount pos" id="histIngresos">$0</div></div>
+        <div class="list-item"><div class="li-main"><div class="li-title">Gastos variables</div></div><div class="li-amount neg" id="histGastosVar">$0</div></div>
+        <div class="list-item"><div class="li-main"><div class="li-title">Costos fijos</div></div><div class="li-amount neg" id="histGastosFijos">$0</div></div>
+        <div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:700;">Balance</div></div><div class="li-amount" id="histBalance" style="font-weight:700;">$0</div></div>
+      </div>
+
+      <div class="card">
+        <h2>Todos los movimientos</h2>
+        <div id="listaHistorial"><div class="empty">Sin movimientos en este mes</div></div>
+      </div>
+    </section>
+
+    <!-- ================= TAB: AJUSTES ================= -->
+    <section class="tab" id="tab-ajustes">
+
+      <div class="card">
+        <h2>Copia de seguridad<small>Guardá tus datos en Google Drive</small></h2>
+        <div id="driveEstado" class="info-box">No conectada. Tus datos están guardados solo en este celular — conectá Drive para no perderlos si cambiás de equipo.</div>
+        <button class="btn btn-amber" id="btnConectarDrive">Conectar Google Drive</button>
+        <button class="btn btn-ghost" id="btnSincronizarAhora" style="display:none;">Sincronizar ahora</button>
+        <button class="btn btn-ghost" id="btnRestaurarDrive" style="display:none;">Restaurar último backup</button>
+      </div>
+
+      <div class="card">
+        <details class="settings-group">
+          <summary>Clientes (<span id="countClientes">0</span>)</summary>
+          <div id="listaClientes" style="margin-top:8px;"></div>
+          <div class="row2" style="margin-top:10px;">
+            <input type="text" id="nuevoClienteNombre" placeholder="Nombre">
+            <input type="text" id="nuevoClienteTel" placeholder="Teléfono (opcional)">
+          </div>
+          <button class="btn btn-ghost btn-sm" id="btnNuevoCliente" style="width:100%;margin-top:8px;">+ Agregar cliente</button>
+        </details>
+      </div>
+
+      <div class="card">
+        <details class="settings-group">
+          <summary>Servicios y precios (<span id="countServicios">0</span>)</summary>
+          <div id="listaServicios" style="margin-top:8px;"></div>
+        </details>
+      </div>
+
+      <div class="card">
+        <details class="settings-group">
+          <summary>Sobre esta app</summary>
+          <div style="margin-top:8px;font-size:13px;color:var(--ink-soft);line-height:1.6;">
+            Lavandería · Control de Ingresos y Gastos<br>
+            Todos los datos se guardan en este dispositivo (IndexedDB) y se pueden respaldar en Google Drive.<br>
+            Desarrollado por Nexus Labs.
+          </div>
+        </details>
+      </div>
+
+    </section>
+
+  </main>
+
+  <nav class="bottom">
+    <button class="nav-btn active" data-tab="tab-panel">
+      <svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg>
+      Panel
+    </button>
+    <button class="nav-btn" data-tab="tab-gastos">
+      <svg viewBox="0 0 24 24"><path d="M3 7h18M6 7v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7M9 7V4h6v3"/></svg>
+      Gastos
+    </button>
+    <button class="nav-btn" data-tab="tab-fijos">
+      <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h10M7 16h6"/></svg>
+      Fijos
+    </button>
+    <button class="nav-btn" data-tab="tab-historial">
+      <svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg>
+      Historial
+    </button>
+    <button class="nav-btn" data-tab="tab-ajustes">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21a2 2 0 1 1-4 0v-.2a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H3a2 2 0 1 1 0-4h.2a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.6V3a2 2 0 1 1 4 0v.2a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.6 1H21a2 2 0 1 1 0 4h-.2a1.7 1.7 0 0 0-1.6 1z"/></svg>
+      Ajustes
+    </button>
+  </nav>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script src="seed.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
