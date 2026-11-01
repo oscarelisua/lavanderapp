@@ -106,7 +106,7 @@ async function seedIfEmpty() {
 
 /* -------------------------------- Helpers -------------------------------- */
 const fmtMoney = (n) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(n || 0);
-const todayISO = () => new Date().toISOString().split('T')[0];
+const todayISO = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); };
 const monthKey = (dateStr) => (dateStr || todayISO()).slice(0, 7); // YYYY-MM
 const monthLabel = (key) => {
   const [y, m] = key.split('-').map(Number);
@@ -131,6 +131,8 @@ let state = {
   movimientos: [],
   gastos: [],
   historialMonth: todayISO().slice(0, 7),
+  fechaPanel: todayISO(),
+  mesGastos: todayISO().slice(0, 7),
 };
 
 async function loadState() {
@@ -186,11 +188,13 @@ function renderPanelForm() {
   dl.innerHTML = state.clientes.map(c => `<option value="${escapeHtml(c.nombre)}">`).join('');
 
   const sel = document.getElementById('ingServicio');
+  const prev = sel.value;
   sel.innerHTML = state.servicios.map(s => `<option value="${s.id}">${escapeHtml(s.nombre)}</option>`).join('');
+  if (prev && state.servicios.some(s => String(s.id) === prev)) sel.value = prev;
   if (state.servicios.length) {
-    document.getElementById('ingPrecio').value = precioDeServicio(state.servicios[0].id);
+    document.getElementById('ingPrecio').value = precioDeServicio(parseInt(sel.value));
   }
-  document.getElementById('ingFecha').value = todayISO();
+  document.getElementById('ingFecha').value = state.fechaPanel;
   recalcTotalIngreso();
 }
 
@@ -201,10 +205,15 @@ function recalcTotalIngreso() {
 }
 
 function renderListaHoy() {
-  const hoy = todayISO();
-  const items = state.movimientos.filter(m => m.fecha === hoy);
+  const fecha = state.fechaPanel;
+  document.getElementById('panelFecha').value = fecha;
+  const items = state.movimientos.filter(m => m.fecha === fecha);
+  const total = items.reduce((s, m) => s + (m.total || 0), 0);
+  document.getElementById('resumenDia').textContent = items.length
+    ? `${items.length} ${items.length === 1 ? 'movimiento' : 'movimientos'} · Total del día ${fmtMoney(total)}`
+    : '';
   const el = document.getElementById('listaHoy');
-  if (!items.length) { el.innerHTML = '<div class="empty">Todavía no cargaste nada hoy</div>'; return; }
+  if (!items.length) { el.innerHTML = '<div class="empty">Sin movimientos en este día</div>'; return; }
   el.innerHTML = items.map(m => `
     <div class="list-item">
       <div class="li-main">
@@ -218,14 +227,16 @@ function renderListaHoy() {
 }
 
 function renderGastoForm() {
-  document.getElementById('gastoFecha').value = todayISO();
+  const el = document.getElementById('gastoFecha');
+  if (!el.value) el.value = todayISO();
 }
 
 function renderListaGastosMes() {
-  const key = todayISO().slice(0, 7);
+  const key = state.mesGastos;
+  document.getElementById('gastoMesLabel').textContent = monthLabel(key);
   const items = state.gastos.filter(g => monthKey(g.fecha) === key && g.tipo !== 'fijo');
   const el = document.getElementById('listaGastosMes');
-  if (!items.length) { el.innerHTML = '<div class="empty">Sin gastos este mes</div>'; return; }
+  if (!items.length) { el.innerHTML = '<div class="empty">Sin gastos en este mes</div>'; return; }
   el.innerHTML = items.map(g => `
     <div class="list-item">
       <div class="li-main">
@@ -303,6 +314,7 @@ function renderHistorial() {
           <div class="li-sub">${escapeHtml(item.servicioNombre || '')} · ${formatFechaCorta(item.fecha)}</div>
         </div>
         <div class="li-amount pos">+${fmtMoney(item.total)}</div>
+        <button class="li-del" data-hist-del="mov:${item.id}">✕</button>
       </div>`;
     }
     return `<div class="list-item">
@@ -311,6 +323,7 @@ function renderHistorial() {
         <div class="li-sub">${item.descripcion ? escapeHtml(item.descripcion) + ' · ' : ''}${formatFechaCorta(item.fecha)}</div>
       </div>
       <div class="li-amount neg">-${fmtMoney(item.monto)}</div>
+      <button class="li-del" data-hist-del="gasto:${item.id}">✕</button>
     </div>`;
   }).join('');
 }
@@ -417,6 +430,7 @@ document.getElementById('btnGuardarIngreso').addEventListener('click', async () 
     cantidad, precioUnitario, total, formaPago,
   };
   await put('movimientos', mov);
+  state.fechaPanel = fecha;
   toast('Ingreso guardado ✓');
 
   document.getElementById('ingClienteInput').value = '';
@@ -444,6 +458,7 @@ document.getElementById('btnGuardarGasto').addEventListener('click', async () =>
   if (!monto) { toast('El monto no puede ser 0'); return; }
 
   await put('gastos', { id: Date.now(), categoria, descripcion, monto, fecha, tipo: 'variable' });
+  state.mesGastos = monthKey(fecha);
   toast('Gasto guardado ✓');
   document.getElementById('gastoDescripcion').value = '';
   document.getElementById('gastoMonto').value = '';
@@ -553,6 +568,38 @@ document.getElementById('listaServicios').addEventListener('change', async (e) =
   const precio = parseFloat(e.target.value) || 0;
   await put('precios', { servicioId: parseInt(servicioId), precio });
   await loadState();
+});
+
+/* -------------------------------------------------------------------------
+   NAVEGACIÓN POR FECHA (Panel) Y MES (Gastos) + BORRAR DESDE HISTORIAL
+   ------------------------------------------------------------------------- */
+function shiftDay(iso, delta) {
+  const [y, m, d] = iso.split('-').map(Number);
+  const dt = new Date(y, m - 1, d + delta);
+  return dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0') + '-' + String(dt.getDate()).padStart(2, '0');
+}
+function setFechaPanel(f) {
+  state.fechaPanel = f || todayISO();
+  document.getElementById('ingFecha').value = state.fechaPanel;
+  renderListaHoy();
+}
+document.getElementById('panelFecha').addEventListener('change', e => setFechaPanel(e.target.value));
+document.getElementById('ingFecha').addEventListener('change', e => setFechaPanel(e.target.value));
+document.getElementById('diaAnterior').addEventListener('click', () => setFechaPanel(shiftDay(state.fechaPanel, -1)));
+document.getElementById('diaSiguiente').addEventListener('click', () => setFechaPanel(shiftDay(state.fechaPanel, 1)));
+document.getElementById('btnIrHoy').addEventListener('click', () => setFechaPanel(todayISO()));
+
+document.getElementById('gastoMesAnt').addEventListener('click', () => { state.mesGastos = shiftMonth(state.mesGastos, -1); renderListaGastosMes(); });
+document.getElementById('gastoMesSig').addEventListener('click', () => { state.mesGastos = shiftMonth(state.mesGastos, 1); renderListaGastosMes(); });
+
+document.getElementById('listaHistorial').addEventListener('click', async (e) => {
+  const v = e.target.dataset.histDel;
+  if (!v) return;
+  if (!confirm('¿Eliminar este movimiento?')) return;
+  const [tipo, id] = v.split(':');
+  await del(tipo === 'mov' ? 'movimientos' : 'gastos', parseInt(id));
+  await loadState();
+  renderAll();
 });
 
 /* =========================================================================

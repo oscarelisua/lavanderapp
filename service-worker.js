@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lavanderia-v1';
+const CACHE_NAME = 'lavanderia-v2';
 const ASSETS = [
   './index.html',
   './app.js',
